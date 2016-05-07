@@ -11,10 +11,14 @@ class Configuration
      */
     public static function install()
     {
+        $sudo = isset($_SERVER['SUDO_USER']);
+
         if (! is_dir($directory = VALET_HOME_PATH)) {
             mkdir($directory, 0755);
 
-            chown($directory, $_SERVER['SUDO_USER']);
+            if ($sudo) {
+                chown($directory, $_SERVER['SUDO_USER']);
+            }
         }
 
         if (! is_dir($driversDirectory = VALET_HOME_PATH.'/Drivers')) {
@@ -22,15 +26,19 @@ class Configuration
 
             copy(__DIR__.'/../stubs/SampleValetDriver.php', $driversDirectory.'/SampleValetDriver.php');
 
-            chown($driversDirectory.'/SampleValetDriver.php', $_SERVER['SUDO_USER']);
-            chown($driversDirectory, $_SERVER['SUDO_USER']);
+            if ($sudo) {
+                chown($driversDirectory.'/SampleValetDriver.php', $_SERVER['SUDO_USER']);
+                chown($driversDirectory, $_SERVER['SUDO_USER']);
+            }
         }
 
         if (! file_exists(static::path())) {
             static::write(['domain' => 'dev', 'paths' => []]);
         }
 
-        chown(static::path(), $_SERVER['SUDO_USER']);
+        if ($sudo) {
+            chown(static::path(), $_SERVER['SUDO_USER']);
+        }
     }
 
     /**

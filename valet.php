@@ -9,7 +9,7 @@ if (file_exists(__DIR__.'/vendor/autoload.php')) {
 
 should_be_compatible();
 
-define('VALET_HOME_PATH', $_SERVER['HOME'].'/.valet');
+define('VALET_HOME_PATH', home_path().'/.valet');
 
 use Silly\Application;
 
@@ -36,7 +36,11 @@ $app->command('install', function ($output) {
 
     Valet\Configuration::install();
 
-    Valet\DnsMasq::install($output);
+    if (windows_os()) {
+        Valet\Acrylic::install($output);
+    } else {
+        Valet\DnsMasq::install($output);
+    }
 
     Valet\LaunchDaemon::restart();
 
@@ -50,8 +54,13 @@ $app->command('domain domain', function ($domain, $output) {
     should_be_sudo();
 
     $domain = trim($domain, '.');
+    $oldDomain = Valet\Configuration::read()['domain'];
 
-    Valet\DnsMasq::updateDomain(Valet\Configuration::read()['domain'], $domain);
+    if (windows_os()) {
+        Valet\Acrylic::updateDomain($oldDomain, $domain);
+    } else {
+        Valet\DnsMasq::updateDomain($oldDomain, $domain);
+    }
 
     Valet\Configuration::updateKey('domain', $domain);
 
@@ -98,7 +107,14 @@ $app->command('link [name]', function ($name, $output) {
  * Display all of the registered symbolic links.
  */
 $app->command('links', function () {
-    passthru('ls -la '.VALET_HOME_PATH.'/Sites');
+    $process = new Symfony\Component\Process\Process('ls');
+    $process->run();
+
+    if ($process->getExitCode() > 0) {
+        passthru('dir /AL "'.VALET_HOME_PATH.'/Sites"');
+    } else {
+        passthru('ls -la '.VALET_HOME_PATH.'/Sites');
+    }
 });
 
 /**
@@ -159,6 +175,11 @@ $app->command('paths', function ($output) {
  * Echo the currently tunneled URL.
  */
 $app->command('fetch-share-url', function ($output) {
+    if (windows_os()) {
+        $output->writeln('Not available on Windows.');
+        return;
+    }
+
     retry(20, function () use ($output) {
         $response = Httpful\Request::get('http://127.0.0.1:4040/api/tunnels')->send();
 
@@ -184,6 +205,10 @@ $app->command('start', function ($output) {
 
     Valet\LaunchDaemon::restart();
 
+    if (windows_os()) {
+        Valet\Acrylic::restart();
+    }
+
     $output->writeln('<info>Valet services have been started.</info>');
 });
 
@@ -194,6 +219,10 @@ $app->command('restart', function ($output) {
     should_be_sudo();
 
     Valet\LaunchDaemon::restart();
+
+    if (windows_os()) {
+        Valet\Acrylic::restart();
+    }
 
     $output->writeln('<info>Valet services have been restarted.</info>');
 });
@@ -206,6 +235,10 @@ $app->command('stop', function ($output) {
 
     Valet\LaunchDaemon::stop();
 
+    if (windows_os()) {
+        Valet\Acrylic::stop();
+    }
+
     $output->writeln('<info>Valet services have been stopped.</info>');
 });
 
@@ -216,6 +249,10 @@ $app->command('uninstall', function ($output) {
     should_be_sudo();
 
     Valet\LaunchDaemon::uninstall();
+
+    if (windows_os()) {
+        Valet\Acrylic::uninstall();
+    }
 
     $output->writeln('<info>Valet has been uninstalled.</info>');
 });

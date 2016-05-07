@@ -37,7 +37,11 @@ class Site
      */
     public static function unlink($name)
     {
-        quietly('rm '.VALET_HOME_PATH.'/Sites/'.$name);
+        if (windows_os()) {
+            quietly('rmdir "'.VALET_HOME_PATH.'/Sites/'.$name.'"');
+        } else {
+            quietly('rm '.VALET_HOME_PATH.'/Sites/'.$name);
+        }
 
         return true;
     }
@@ -59,7 +63,11 @@ class Site
             }
 
             if (is_link($linkPath = VALET_HOME_PATH.'/Sites/'.$file) && ! file_exists($linkPath)) {
-                quietly('rm '.$linkPath);
+                if (windows_os()) {
+                    quietly('rmdir "'.$linkPath.'"');
+                } else {
+                    quietly('rm '.$linkPath);
+                }
             }
         }
     }

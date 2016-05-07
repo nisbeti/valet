@@ -11,13 +11,30 @@ class LaunchDaemon
      */
     public static function install()
     {
-        $contents = str_replace(
-            'SERVER_PATH', realpath(__DIR__.'/../server.php'), file_get_contents(__DIR__.'/../stubs/daemon.plist')
-        );
+        $serverPath = realpath(__DIR__.'/../server.php');
 
-        $contents = str_replace('PHP_PATH', exec('which php'), $contents);
+        if (windows_os()) {
+            $phpPath = exec('where php');
 
-        file_put_contents('/Library/LaunchDaemons/com.laravel.valetServer.plist', $contents);
+            // http://htname.com/service_2/
+            $service = realpath(__DIR__.'/../bin/service.exe');
+
+            $command = 'sc create LaravelValet binPath= "'.$service.' \"'.$phpPath.' -S 127.0.0.1:80 '.$serverPath.'"" DisplayName= "Laravel Valet Server" start= auto';
+
+            static::stop();
+
+            exec('sc delete LaravelValet');
+
+            exec($command);
+        } else {
+            $contents = str_replace(
+                'SERVER_PATH', $serverPath, file_get_contents(__DIR__.'/../stubs/daemon.plist')
+            );
+
+            $contents = str_replace('PHP_PATH', exec('which php'), $contents);
+
+            file_put_contents('/Library/LaunchDaemons/com.laravel.valetServer.plist', $contents);
+        }
     }
 
     /**
@@ -27,9 +44,15 @@ class LaunchDaemon
      */
     public static function restart()
     {
-        quietly('launchctl unload /Library/LaunchDaemons/com.laravel.valetServer.plist > /dev/null');
+        if (windows_os()) {
+            quietly('net stop LaravelValet');
 
-        exec('launchctl load /Library/LaunchDaemons/com.laravel.valetServer.plist');
+            exec('net start LaravelValet');
+        } else {
+            quietly('launchctl unload /Library/LaunchDaemons/com.laravel.valetServer.plist > /dev/null');
+
+            exec('launchctl load /Library/LaunchDaemons/com.laravel.valetServer.plist');
+        }
     }
 
     /**
@@ -39,7 +62,11 @@ class LaunchDaemon
      */
     public static function stop()
     {
-        quietly('launchctl unload /Library/LaunchDaemons/com.laravel.valetServer.plist > /dev/null');
+        if (windows_os()) {
+            quietly('net stop LaravelValet');
+        } else {
+            quietly('launchctl unload /Library/LaunchDaemons/com.laravel.valetServer.plist > /dev/null');
+        }
     }
 
     /**
@@ -51,6 +78,10 @@ class LaunchDaemon
     {
         static::stop();
 
-        unlink('/Library/LaunchDaemons/com.laravel.valetServer.plist');
+        if (windows_os()) {
+            exec('sc delete LaravelValet');
+        } else {
+            unlink('/Library/LaunchDaemons/com.laravel.valetServer.plist');
+        }
     }
 }

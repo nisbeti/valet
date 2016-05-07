@@ -12,7 +12,11 @@ fi
 
 if [[ "$1" = "install" ]] || [[ "$1" = "domain" ]] || [[ "$1" = "start" ]] || [[ "$1" = "restart" ]] || [[ "$1" = "stop" ]] || [[ "$1" = "uninstall" ]]
 then
-    sudo php "$DIR/valet.php" "$@"
+    if hash sudo 2>/dev/null; then
+        sudo php "$DIR/valet.php" "$@"
+    else
+        php "$DIR/valet.php" "$@"
+    fi
 elif [[ "$1" = "share" ]]
 then
     HOST="${PWD##*/}"

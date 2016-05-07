@@ -42,11 +42,11 @@ function retry($retries, $fn, $sleep = 0)
  */
 function should_be_compatible()
 {
-    if (PHP_OS != 'Darwin') {
-        echo 'Valet only supports the Mac operating system.'.PHP_EOL;
+    // if (PHP_OS != 'Darwin') {
+    //     echo 'Valet only supports the Mac operating system.'.PHP_EOL;
 
-        exit(1);
-    }
+    //     exit(1);
+    // }
 
     if (version_compare(PHP_VERSION, '5.5.9', '<')) {
         echo "Valet requires PHP 5.5.9 or later.";
@@ -54,7 +54,7 @@ function should_be_compatible()
         exit(1);
     }
 
-    if (exec('which brew') != '/usr/local/bin/brew') {
+    if (PHP_OS === 'Darwin' && exec('which brew') != '/usr/local/bin/brew') {
         echo 'Valet requires Brew to be installed on your Mac.';
 
         exit(1);
@@ -68,7 +68,33 @@ function should_be_compatible()
  */
 function should_be_sudo()
 {
-    if (! isset($_SERVER['SUDO_USER'])) {
+    if (! windows_os() && ! isset($_SERVER['SUDO_USER'])) {
         throw new Exception('This command must be run with sudo.');
     }
+}
+
+/**
+ * Get the User's home path.
+ *
+ * @return string
+ */
+function home_path()
+{
+    if (! empty($_SERVER['HOME'])) {
+        return $_SERVER['HOME'];
+    } elseif (! empty($_SERVER['HOMEDRIVE']) && ! empty($_SERVER['HOMEPATH'])) {
+        return $_SERVER['HOMEDRIVE'].$_SERVER['HOMEPATH'];
+    } else {
+        throw new Exception('Cannot determine home directory.');
+    }
+}
+
+/**
+ * Determine whether the current environment is Windows based.
+ *
+ * @return bool
+ */
+function windows_os()
+{
+    return strtolower(substr(PHP_OS, 0, 3)) === 'win';
 }

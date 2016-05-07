@@ -28,6 +28,7 @@
         "nategood/httpful": "~0.2"
     },
     "bin": [
-        "valet"
+        "valet",
+        "valet.bat"
     ]
 }
