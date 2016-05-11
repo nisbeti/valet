@@ -6,8 +6,9 @@ $windowsOs = strtolower(substr(PHP_OS, 0, 3)) === 'win';
  * Define the user's "~/.valet" path.
  */
 if ($windowsOs) {
-    $homePath = file_get_contents(__DIR__.'/vendor/homepath');
-    define('VALET_HOME_PATH', $homePath.'/.valet');
+    preg_match("/Users\\\\(.+)\\\\valet/", $_SERVER['SCRIPT_FILENAME'], $matches);
+
+    define('VALET_HOME_PATH', 'C:\Users\\'.$matches[1].'\.valet');
 } else {
     define('VALET_HOME_PATH', '/Users/'.posix_getpwuid(fileowner(__FILE__))['name'].'/.valet');
 }
